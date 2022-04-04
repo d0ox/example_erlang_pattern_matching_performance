@@ -1,0 +1,4 @@
+https://tools.ietf.org/id/draft-ietf-hybi-thewebsocketprotocol-09.html#rfc.section.4
+
+wireshark filter:
+tcp.port == 8080 && ip.addr == 127.0.0.1
