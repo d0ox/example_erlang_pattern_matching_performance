@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include <string.h>
 
 const char* filename = "example1.bin";
 
@@ -15,7 +16,9 @@ struct header{
         unsigned char optcode;
         unsigned char mask;
         unsigned short lenght; 
-        double extended_lenght;       
+        unsigned long long extended_lenght;
+        unsigned char masking_key[5]; 
+        unsigned char* data; 
     };
 
 const unsigned char mFin = 0x80;
@@ -41,23 +44,43 @@ struct header read_head(unsigned char* stream){
   h.rsv2 = (stream[0]& mRsv2)>>5; 
   h.rsv3 = (stream[0]& mRsv3)>>4;
   h.optcode = stream[0]&mOptcode; 
+
+  stream++; 
   //byte 1
-  h.mask = stream[1]&mMask>>7;
-  h.lenght = (unsigned short)stream[1]&mLenght;
+  h.mask = (stream[0]&mMask)>>7;
+  h.lenght = (unsigned short)stream[0]&mLenght;
+
+  stream++; 
   
   if(h.lenght == 126){
-    printf("test: %d", *((unsigned short*)(&stream[2]))); 
-    h.extended_lenght = (double)*((unsigned short*)(&stream[2])); 
+    h.extended_lenght = (((unsigned short)stream[0]) << 8) | stream[1];
+    stream = stream +  2; 
   }
+
+  if(h.lenght == 127){
+    h.extended_lenght = (((unsigned long long)stream[0]) << 24) 
+                      | (((unsigned long long)stream[1]) << 16) 
+                      | (((unsigned long long)stream[2]) << 8) 
+                      | stream[3];
+    stream = stream + 4; 
+  }
+
+  if(h.mask){
+    memcpy(h.masking_key, stream, 4);
+    h.masking_key[5]="\0";
+    stream = stream + 4;
+  }
+
+  const int len = h.lenght < 126 ? h.lenght: h.extended_lenght;
+  h.data =  (unsigned char *)malloc(len+1);  
+  memcpy(h.data, stream, len);  
+  h.data[len]="\0";
+
   return h; 
 }
 
-
 int main(void) {
 
-    clock_t t;
-    t = clock();  
-  
     int fd = open(filename, O_RDONLY);
     if (fd == -1) {
         perror("open\n");
@@ -76,25 +99,25 @@ int main(void) {
     
 
     struct header myHead;
+    // Recording start time
+     struct timespec tstart={0,0}, tend={0,0};
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
+    for(int i=0;i<1000;i++){
+      read_head(file_contents);
+    }
+    // Recording end time.
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    double computation_time = ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
+    printf("read data: %s\n %Lf seconds\n", file_contents, computation_time );
+
     myHead = read_head(file_contents);
            
-    // 1st byte 1000 0001
-    //print_bin(myHead.fin);
-    //print_bin(myHead.rsv1);
-    //print_bin(myHead.rsv2);
-    //print_bin(myHead.rsv3);
-    //print_bin(myHead.optcode);
-    //print_bin(myHead.mask);
-    //print_bin(myHead.lenght);
+     
 
-
-    // Recording end time.
-    t = clock() - t;      
-    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
     
 
   
-    //printf("read data: %s\n %f microsec", file_contents, time_taken /1000000 );
+    
     close(fd);
     printf("0                   1                   2                   3\n");
   printf(" 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n");
@@ -109,7 +132,7 @@ int main(void) {
   printf("+ - - - - - - - - - - - - - - - +-------------------------------+\n");
   printf("|                               |Masking-key, if MASK set to 1  |\n");
   printf("+-------------------------------+-------------------------------+\n");
-  printf("| Masking-key (continued)       |          Payload Data         |\n");
+  printf("| Masking-key (continued)%s       |          Payload Data: %s        |\n",myHead.masking_key, myHead.data);
   printf("+-------------------------------- - - - - - - - - - - - - - - - +\n");
 
     free(file_contents);
