@@ -108,7 +108,7 @@ int main(void) {
     // Recording end time.
     clock_gettime(CLOCK_MONOTONIC, &tend);
     double computation_time = ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-    printf("read data: %s\n %Lf seconds\n", file_contents, computation_time );
+    printf("read data: %s\n %f seconds\n", file_contents, computation_time );
 
     myHead = read_head(file_contents);
            
@@ -120,20 +120,20 @@ int main(void) {
     
     close(fd);
     printf("0                   1                   2                   3\n");
-  printf(" 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n");
-  printf("+-+-+-+-+-------+-+-------------+-------------------------------+\n");
-  printf("|F|R|R|R| opcode|M| Payload len |    Extended payload length    |\n");
-  printf("|I|S|S|S|   %d   |A|     %d     |             %d                 |\n",myHead.optcode ,myHead.lenght, myHead.extended_lenght);
-  printf("|N|V|V|V|       |S|             |                               |\n");
-  printf("| | | | |       |K|             |                               |\n");
-  printf("|%d|%d|%d|%d|       |%d|             |                               |\n",myHead.fin,myHead.rsv1,myHead.rsv2,myHead.rsv3,myHead.mask);
-  printf("+-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +\n");
-  printf("|     Extended payload length continued, if payload len == 127  |\n");
-  printf("+ - - - - - - - - - - - - - - - +-------------------------------+\n");
-  printf("|                               |Masking-key, if MASK set to 1  |\n");
-  printf("+-------------------------------+-------------------------------+\n");
-  printf("| Masking-key (continued)%s       |          Payload Data: %s        |\n",myHead.masking_key, myHead.data);
-  printf("+-------------------------------- - - - - - - - - - - - - - - - +\n");
+    printf(" 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n");
+    printf("+-+-+-+-+-------+-+-------------+-------------------------------+\n");
+    printf("|F|R|R|R| opcode|M| Payload len |    Extended payload length    |\n");
+    printf("|I|S|S|S|   %d   |A|     %d     |             %d                 |\n",myHead.optcode ,myHead.lenght, myHead.extended_lenght);
+    printf("|N|V|V|V|       |S|             |                               |\n");
+    printf("| | | | |       |K|             |                               |\n");
+    printf("|%d|%d|%d|%d|       |%d|             |                               |\n",myHead.fin,myHead.rsv1,myHead.rsv2,myHead.rsv3,myHead.mask);
+    printf("+-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +\n");
+    printf("|     Extended payload length continued, if payload len == 127  |\n");
+    printf("+ - - - - - - - - - - - - - - - +-------------------------------+\n");
+    printf("|                               |Masking-key, if MASK set to 1  |\n");
+    printf("+-------------------------------+-------------------------------+\n");
+    printf("| Masking-key (continued)%s       |          Payload Data: %s        |\n",myHead.masking_key, myHead.data);
+    printf("+-------------------------------- - - - - - - - - - - - - - - - +\n");
 
     free(file_contents);
 
