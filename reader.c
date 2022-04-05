@@ -5,36 +5,53 @@
 #include <fcntl.h>
 #include <time.h>
 
-#define print_bits(x)                                             \
-  do {                                                            \
-    typeof(x) a__ = (x);                                          \
-    char *p__ = (char *)&a__ + sizeof(x) - 1;                     \
-    size_t bytes__ = sizeof(x);                                   \
-    printf(#x ": ");                                              \
-    while (bytes__--) {                                           \
-      char bits__ = 8;                                            \
-      while (bits__--) putchar(*p__ & (1 << bits__) ? '1' : '0'); \
-      p__--;                                                      \
-    }                                                             \
-    putchar('\n');                                                \
-  } while (0)
+const char* filename = "example1.bin";
 
+struct header{        
+        unsigned char fin;
+        unsigned char rsv1;
+        unsigned char rsv2;
+        unsigned char rsv3;
+        unsigned char optcode;
+        unsigned char mask;
+        unsigned short lenght; 
+        double extended_lenght;       
+    };
 
-const char* filename = "example.bin";
+const unsigned char mFin = 0x80;
+const unsigned char mRsv1 = 0x40;
+const unsigned char mRsv2 = 0x20;
+const unsigned char mRsv3 = 0x10;
+const unsigned char mOptcode = 0x0f;
+const unsigned char mMask = 0x80;
+const unsigned char mLenght = 0x7f;
 
-typedef union {
-    struct {
-        unsigned char fin : 1;
-        unsigned char rsv1: 1;
-        unsigned char rsv2: 1;
-        unsigned char rsv3: 1;
-        unsigned char optcode: 4;
-        unsigned char mask: 1;
-        unsigned char lenght: 1;
-     
-    } header;
-    unsigned char rest;
-} WebsocketDataPacket;
+void print_bin(unsigned char value)
+{
+    for (int i = sizeof(char) * 7; i >= 0; i--)
+        printf("%d", (value & (1 << i)) >> i );
+    putc('\n', stdout);
+}
+
+struct header read_head(unsigned char* stream){
+  struct header h;
+  // byte 0 
+  h.fin = (stream[0]& mFin)>>7; 
+  h.rsv1 = (stream[0]& mRsv1)>>6; 
+  h.rsv2 = (stream[0]& mRsv2)>>5; 
+  h.rsv3 = (stream[0]& mRsv3)>>4;
+  h.optcode = stream[0]&mOptcode; 
+  //byte 1
+  h.mask = stream[1]&mMask>>7;
+  h.lenght = (unsigned short)stream[1]&mLenght;
+  
+  if(h.lenght == 126){
+    printf("test: %d", *((unsigned short*)(&stream[2]))); 
+    h.extended_lenght = (double)*((unsigned short*)(&stream[2])); 
+  }
+  return h; 
+}
+
 
 int main(void) {
 
@@ -53,19 +70,47 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
 
-    char* file_contents = malloc(sb.st_size);
-    read(fd, file_contents, sb.st_size);
+    unsigned char* file_contents = malloc(sb.st_size);
 
-    union WebsocketDataPacket* wdp = &file_contents;
-    print_bits(wdp.header);
+    read(fd, file_contents, sb.st_size);
+    
+
+    struct header myHead;
+    myHead = read_head(file_contents);
+           
+    // 1st byte 1000 0001
+    //print_bin(myHead.fin);
+    //print_bin(myHead.rsv1);
+    //print_bin(myHead.rsv2);
+    //print_bin(myHead.rsv3);
+    //print_bin(myHead.optcode);
+    //print_bin(myHead.mask);
+    //print_bin(myHead.lenght);
+
 
     // Recording end time.
     t = clock() - t;      
     double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
+    
+
   
-  
-    printf("read data: %s\n %f microsec", file_contents, time_taken /1000000 );
+    //printf("read data: %s\n %f microsec", file_contents, time_taken /1000000 );
     close(fd);
+    printf("0                   1                   2                   3\n");
+  printf(" 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n");
+  printf("+-+-+-+-+-------+-+-------------+-------------------------------+\n");
+  printf("|F|R|R|R| opcode|M| Payload len |    Extended payload length    |\n");
+  printf("|I|S|S|S|   %d   |A|     %d     |             %d                 |\n",myHead.optcode ,myHead.lenght, myHead.extended_lenght);
+  printf("|N|V|V|V|       |S|             |                               |\n");
+  printf("| | | | |       |K|             |                               |\n");
+  printf("|%d|%d|%d|%d|       |%d|             |                               |\n",myHead.fin,myHead.rsv1,myHead.rsv2,myHead.rsv3,myHead.mask);
+  printf("+-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +\n");
+  printf("|     Extended payload length continued, if payload len == 127  |\n");
+  printf("+ - - - - - - - - - - - - - - - +-------------------------------+\n");
+  printf("|                               |Masking-key, if MASK set to 1  |\n");
+  printf("+-------------------------------+-------------------------------+\n");
+  printf("| Masking-key (continued)       |          Payload Data         |\n");
+  printf("+-------------------------------- - - - - - - - - - - - - - - - +\n");
 
     free(file_contents);
 
