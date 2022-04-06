@@ -106,9 +106,9 @@ int main(void) {
     }
     // Recording end time.    
     clock_t end = clock();
-    double elapsed = (double)((double)(end - start))/CLOCKS_PER_SEC;
+    double elapsed = ((double)(end - start))/CLOCKS_PER_SEC;
     //printf("read data: %s\n %.20f seconds\n", file_contents, elapsed );
-    printf("Time: %.30f microseconds\n",elapsed );
+    printf("Time: %.30f seconds\n",(elapsed/1000) );
 
     myHead = read_head(file_contents);
            
