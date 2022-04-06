@@ -40,4 +40,5 @@ performance(Fun, N) ->
 
 read_performance(File) ->
     {ok, Bin} = file:read_file(File),
-    performance(fun() -> reader:parse_header(Bin) end, 1000).
+    Time = performance(fun() -> reader:parse_header(Bin) end, 1000),
+    io:format("Time: ~p microseconds", [Time]).

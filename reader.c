@@ -100,15 +100,15 @@ int main(void) {
 
     struct header myHead;
     // Recording start time
-     struct timespec tstart={0,0}, tend={0,0};
-    clock_gettime(CLOCK_MONOTONIC, &tstart);
+    clock_t start = clock();
     for(int i=0;i<1000;i++){
       read_head(file_contents);
     }
-    // Recording end time.
-    clock_gettime(CLOCK_MONOTONIC, &tend);
-    double computation_time = ((double)tend.tv_sec + 1.0e-9*tend.tv_nsec) - ((double)tstart.tv_sec + 1.0e-9*tstart.tv_nsec);
-    printf("read data: %s\n %f seconds\n", file_contents, computation_time );
+    // Recording end time.    
+    clock_t end = clock();
+    double elapsed = (double)((double)(end - start))/CLOCKS_PER_SEC;
+    //printf("read data: %s\n %.20f seconds\n", file_contents, elapsed );
+    printf("Time: %.30f microseconds\n",elapsed );
 
     myHead = read_head(file_contents);
            
@@ -119,6 +119,7 @@ int main(void) {
   
     
     close(fd);
+    /*
     printf("0                   1                   2                   3\n");
     printf(" 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n");
     printf("+-+-+-+-+-------+-+-------------+-------------------------------+\n");
@@ -134,7 +135,7 @@ int main(void) {
     printf("+-------------------------------+-------------------------------+\n");
     printf("| Masking-key (continued)%s       |          Payload Data: %s        |\n",myHead.masking_key, myHead.data);
     printf("+-------------------------------- - - - - - - - - - - - - - - - +\n");
-
+*/
     free(file_contents);
 
     exit(EXIT_SUCCESS);
